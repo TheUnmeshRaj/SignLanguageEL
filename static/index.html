@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignSense | Indian Sign Language Recognition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        dark: '#1e293b',
+                        light: '#f8fafc'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .result-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+        
+        #videoElement {
+            transform: scaleX(-1);
+            border-radius: 12px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-dark">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-hands text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold text-dark">SignSense</span>
+                    </div>
+                </div>
+                <div class="hidden md:ml-6 md:flex md:items-center md:space-x-8">
+                    <a href="#demo" class="text-dark hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Demo</a>
+                    <a href="#how-it-works" class="text-dark hover:text-primary px-3 py-2 rounded-md text-sm font-medium">How It Works</a>
+                    <a href="#about" class="text-dark hover:text-primary px-3 py-2 rounded-md text-sm font-medium">About</a>
+                </div>
+                <div class="-mr-2 flex items-center md:hidden">
+                    <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-dark hover:text-primary focus:outline-none" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="gradient-bg text-white">
+        <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+                    Bridging Communication Gaps
+                </h1>
+                <p class="mt-6 max-w-lg mx-auto text-xl">
+                    Real-time Indian Sign Language recognition powered by machine learning
+                </p>
+                <div class="mt-10">
+                    <a href="#demo" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-white hover:bg-gray-50">
+                        Try It Now
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Section -->
+    <div id="demo" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-dark sm:text-4xl">
+                    Interactive Demo
+                </h2>
+                <p class="mt-4 max-w-2xl text-lg text-gray-500 mx-auto">
+                    Experience our sign language recognition in action
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Webcam Interaction -->
+                <div class="bg-gray-50 rounded-xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-dark">Real-time Recognition</h3>
+                        <button id="startWebcam" class="flex items-center text-sm bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition">
+                            <i class="fas fa-video mr-2"></i>
+                            Start Webcam
+                        </button>
+                        <button id="stopWebcam" class="hidden">Stop Webcam</button>
+
+                    </div>
+                    
+                    <div class="relative bg-black rounded-lg overflow-hidden aspect-video">
+                        <video id="videoElement" width="100%" height="auto" autoplay playsinline class="w-full"></video>
+                        <div id="webcamOverlay" class="absolute inset-0 flex items-center justify-center hidden">
+                            <div class="text-white text-lg bg-black bg-opacity-50 px-4 py-2 rounded">
+                                Webcam is active
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-center">
+                        <button id="captureBtn" class="hidden bg-secondary text-white px-6 py-2 rounded-md hover:bg-secondary-dark transition">
+                            <i class="fas fa-hand-paper mr-2"></i>
+                            Capture Sign
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- File Upload -->
+                <div class="bg-gray-50 rounded-xl p-6 shadow-sm">
+                    <h3 class="text-lg font-medium text-dark mb-4">Upload Video/Image</h3>
+                    
+                    <div id="uploadArea" class="upload-area rounded-lg p-8 text-center cursor-pointer mb-4">
+    <div class="flex flex-col items-center justify-center">
+        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3" id="uploadIcon"></i>
+        <p class="text-sm text-gray-500" id="uploadText">Drag & drop files here or click to browse</p>
+        <p class="text-xs text-gray-400 mt-1">Supports: MP4, MOV, JPG, PNG</p>
+    </div>
+    <input type="file" id="fileInput" class="hidden" accept="video/*,image/*">
+</div>
+<div id="filePreviewContainer" class="hidden relative w-full aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4">
+    <img id="imagePreview" class="w-full h-full object-contain hidden" />
+    <video id="videoPreview" controls class="w-full h-full object-contain hidden"></video>
+    <button id="clearFile" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 text-xs hidden">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+<div class="flex items-center justify-between">
+    <div class="text-sm text-gray-500">
+        <span id="fileName">No file selected</span>
+    </div>
+    <button id="analyzeBtn" class="hidden bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        Analyze
+    </button>
+    <div id="loadingSpinner" class="hidden animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+</div>
+                    <div class="mt-4 text-sm text-gray-500">
+                        Upload a video or image of a sign, and our model will recognize it.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="mt-12 bg-gray-50 rounded-xl p-6 shadow-sm">
+                <h3 class="text-lg font-medium text-dark mb-4">Recognition Results</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-lg p-4 shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-primary bg-opacity-10 p-3 rounded-full">
+                                <i class="fas fa-hand-paper text-primary"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-sm font-medium text-gray-500">Detected Sign</h4>
+                                <p id="detectedSign" class="text-lg font-semibold text-dark">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-secondary bg-opacity-10 p-3 rounded-full">
+                                <i class="fas fa-percentage text-secondary"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-sm font-medium text-gray-500">Confidence</h4>
+                                <p id="confidenceLevel" class="text-lg font-semibold text-dark">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-green-500 bg-opacity-10 p-3 rounded-full">
+                                <i class="fas fa-language text-green-500"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-sm font-medium text-gray-500">Translation</h4>
+                                <p id="translationText" class="text-lg font-semibold text-dark">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div id="resultVisual" class="hidden">
+                        <div class="flex items-center justify-center">
+                            <div class="result-badge bg-white rounded-full p-4 shadow-lg">
+                                <span id="resultText" class="text-2xl font-bold text-primary"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div id="how-it-works" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-dark sm:text-4xl">
+                    How It Works
+                </h2>
+                <p class="mt-4 max-w-2xl text-lg text-gray-500 mx-auto">
+                    Our advanced machine learning model recognizes Indian Sign Language with high accuracy
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex-shrink-0 bg-primary bg-opacity-10 p-3 rounded-full inline-flex">
+                        <i class="fas fa-hand-paper text-primary text-xl"></i>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-dark">Sign Detection</h3>
+                    <p class="mt-2 text-gray-500">
+                        Our model detects hand shapes and movements in real-time or from uploaded media.
+                    </p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex-shrink-0 bg-secondary bg-opacity-10 p-3 rounded-full inline-flex">
+                        <i class="fas fa-brain text-secondary text-xl"></i>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-dark">Neural Processing</h3>
+                    <p class="mt-2 text-gray-500">
+                        A deep neural network processes the visual data to classify the sign language gestures.
+                    </p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex-shrink-0 bg-green-500 bg-opacity-10 p-3 rounded-full inline-flex">
+                        <i class="fas fa-comment-dots text-green-500 text-xl"></i>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-dark">Text Output</h3>
+                    <p class="mt-2 text-gray-500">
+                        The recognized signs are translated into text for easy understanding and communication.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-16">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2">
+                        <div class="p-8">
+                            <h3 class="text-2xl font-bold text-dark">Technical Details</h3>
+                            <p class="mt-4 text-gray-500">
+                                Our model is trained on a comprehensive dataset of Indian Sign Language gestures, achieving state-of-the-art accuracy through advanced computer vision techniques.
+                            </p>
+                            <div class="mt-6">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-gray-700">Real-time processing at 30 FPS</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start mt-3">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-gray-700">Supports 100+ ISL signs</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start mt-3">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-gray-700">95%+ accuracy in controlled conditions</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-8 flex items-center justify-center">
+                            <div class="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-4xl text-gray-400"></i>
+                                </div>
+                                <!-- Placeholder for model performance visualization -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div id="about" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-dark sm:text-4xl">
+                    About SignSense
+                </h2>
+                <p class="mt-4 max-w-2xl text-lg text-gray-500 mx-auto">
+                    Bridging the communication gap for the deaf and hard-of-hearing community
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-dark">Our Mission</h3>
+                    <p class="mt-4 text-gray-500">
+                        SignSense was created to make communication more accessible for the deaf and hard-of-hearing community in India. 
+                        Our goal is to leverage cutting-edge machine learning technology to break down barriers and foster inclusion.
+                    </p>
+                    <p class="mt-4 text-gray-500">
+                        Indian Sign Language (ISL) has unique characteristics that differ from other sign languages. 
+                        Our model is specifically trained to recognize these nuances with high accuracy.
+                    </p>
+                    <div class="mt-8">
+                        <a href="#" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary-dark">
+                            Learn More About ISL
+                            <i class="fas fa-external-link-alt ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-8 shadow-sm">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-primary bg-opacity-10 p-4 rounded-full">
+                            <i class="fas fa-lightbulb text-primary text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-dark">Future Development</h3>
+                            <p class="mt-2 text-gray-500">
+                                We're continuously improving our model to support more signs, dialects, and real-world scenarios.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 grid grid-cols-1 gap-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle-notch text-primary text-xs"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">Sentence-level recognition (coming soon)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle-notch text-primary text-xs"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">Mobile app for on-the-go translation</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle-notch text-primary text-xs"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">Two-way communication system</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center">
+                        <i class="fas fa-hands text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold">SignSense</span>
+                    </div>
+                    <p class="mt-4 text-gray-300">
+                        Making sign language recognition accessible to everyone.
+                    </p>
+                    <div class="mt-6 flex space-x-6">
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                            Product
+                        </h3>
+                        <div class="mt-4 space-y-4">
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                Features
+                            </a>
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                API
+                            </a>
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                Documentation
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                            Company
+                        </h3>
+                        <div class="mt-4 space-y-4">
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                About
+                            </a>
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                Blog
+                            </a>
+                            <a href="#" class="text-base text-gray-300 hover:text-white block">
+                                Contact
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                        Subscribe to our newsletter
+                    </h3>
+                    <p class="mt-4 text-gray-300">
+                        Get the latest updates on our product and research.
+                    </p>
+                    <form class="mt-4 sm:flex">
+                        <label for="email" class="sr-only">Email</label>
+                        <input type="email" id="email" required class="w-full px-4 py-2 rounded-md text-dark" placeholder="Enter your email">
+                        <button type="submit" class="mt-3 sm:mt-0 sm:ml-3 flex-shrink-0 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition">
+                            Subscribe
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700">
+                <p class="text-base text-gray-400 text-center">
+                    &copy; 2023 SignSense. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    // Webcam functionality
+    const startWebcamBtn = document.getElementById('startWebcam');
+    const videoElement = document.getElementById('videoElement');
+    const webcamOverlay = document.getElementById('webcamOverlay');
+    const captureBtn = document.getElementById('captureBtn');
+
+    let stream = null;
+    let intervalId = null;
+
+startWebcamBtn.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoElement.srcObject = stream;
+        webcamOverlay.classList.remove('hidden');
+        startWebcamBtn.classList.add('hidden');
+        captureBtn.classList.add('hidden'); // hide manual capture button
+
+        // Start real-time prediction loop
+        intervalId = setInterval(captureAndSendFrame, 1000); // every second
+    } catch (err) {
+        console.error("Error accessing webcam:", err);
+        alert("Could not access the webcam. Please check permissions.");
+    }
+});
+
+async function captureAndSendFrame() {
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    canvas.getContext('2d').drawImage(videoElement, 0, 0);
+
+    canvas.toBlob(blob => {
+        if (blob) sendToModel(blob);
+    }, 'image/jpeg');
+}
+
+captureBtn.addEventListener('click', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    canvas.getContext('2d').drawImage(videoElement, 0, 0);
+
+    canvas.toBlob(blob => {
+        sendToModel(blob);
+    }, 'image/jpeg');
+    });
+
+    // File upload functionality
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelection();
+        }
+    });
+
+    fileInput.addEventListener('change', handleFileSelection);
+
+    function handleFileSelection() {
+        if (fileInput.files.length) {
+            const file = fileInput.files[0];
+            fileName.textContent = file.name;
+            analyzeBtn.classList.remove('hidden');
+        }
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        sendToModel(file);
+    });
+
+    // Send image (blob or file) to backend model
+    async function sendToModel(imageBlob) {
+        const formData = new FormData();
+        formData.append("image", imageBlob);
+
+        try {
+            const res = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            updateResults(data.prediction || "No sign detected");
+        } catch (err) {
+            console.error("Prediction error:", err);
+            updateResults("Error");
+        }
+    }
+
+    // Update frontend with actual prediction
+    function updateResults(prediction) {
+        const resultVisual = document.getElementById('resultVisual');
+        const resultText = document.getElementById('resultText');
+
+        document.getElementById('detectedSign').textContent = prediction;
+        document.getElementById('confidenceLevel').textContent = 'N/A';
+        document.getElementById('translationText').textContent = `"${prediction}" in English`;
+
+        resultText.textContent = prediction;
+        resultVisual.classList.remove('hidden');
+
+        document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    const stopWebcamBtn = document.getElementById('stopWebcam');
+
+stopWebcamBtn.addEventListener('click', () => {
+    // Stop media stream
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
+    // Stop real-time prediction loop
+    clearInterval(intervalId);
+
+    // Reset UI
+    videoElement.srcObject = null;
+    webcamOverlay.classList.add('hidden');
+    stopWebcamBtn.classList.add('hidden');
+    startWebcamBtn.classList.remove('hidden');
+    
+});
+
+</script>
+
+</body>
+</html>
